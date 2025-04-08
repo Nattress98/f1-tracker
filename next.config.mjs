@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    basePath: "/f1-tracker",
+    // basePath: "/f1-tracker",
     output: "export",  // <=== enables static exports
 };
 
