@@ -28,20 +28,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        name: Install pnpm
-        with:
-          version: 10
-          run_install: false
-
-      - name: Install Node.js
+      - name: Setup Node.js ⚙️
         uses: actions/setup-node@v4
         with:
-          node-version: 22
-          cache: 'pnpm'
+          node-version: 20
 
-      - name: Install dependencies
-        run: pnpm install
+      - name: Cache dependencies ⚡
+        id: cache_dependencies
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: node-modules-${{ hashFiles('package-lock.json') }}
+
+      - name: Install dependencies 🔧
+        shell: bash
+        if: steps.cache_dependencies.outputs.cache-hit != 'true'
+        run: npm ci
 
       - name: Setup Pages
         id: setup_pages
