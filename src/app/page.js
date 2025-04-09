@@ -10,38 +10,46 @@ import {
 } from "@/components/ui/select";
 import { useState, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
+import { GetMeetings } from "@/api/openf1";
 
 // Dynamically import react-globe.gl to avoid SSR issues
 const Globe = dynamic(() => import("react-globe.gl"), { ssr: false });
 
-const tracks = [
-  { name: "Albert Park - Aus", coordinates: [-37.8497, 144.968] },
-  { name: "Shanghai - China", coordinates: [31.3389, 121.22] },
-  { name: "Suzuka - Japan", coordinates: [34.8431, 136.541] },
-  { name: "Bahrain - Bahrain", coordinates: [26.0325, 50.5106] },
-  { name: "Miami - USA", coordinates: [25.958, -80.2389] },
-  { name: "Monaco - Monaco", coordinates: [43.7347, 7.4206] },
-  { name: "Montreal - Canada", coordinates: [45.5, -73.5228] },
-  { name: "Silverstone - UK", coordinates: [52.0733, -1.0142] },
-  { name: "Hungaroring - Hungary", coordinates: [47.5789, 19.2486] },
-  { name: "Spa-Francorchamps - Belgium", coordinates: [50.4372, 5.9714] },
-  { name: "Zandvoort - Netherlands", coordinates: [52.3889, 4.5406] },
-  { name: "Monza - Italy", coordinates: [45.6156, 9.2811] },
-  { name: "Singapore - Singapore", coordinates: [1.2914, 103.864] },
-  { name: "Las Vegas - USA", coordinates: [36.1699, -115.1398] },
-];
+const trackCoords = {
+  61: [1.291576701185664, 103.86399552601567], // Singapore
+}
 
 export default function Home() {
+  const [tracks, setTracks] = useState([]);
   const [selectedTrack, setSelectedTrack] = useState(tracks[0]);
   const globeRef = useRef(null);
   const [windowHeight, setWindowHeight] = useState(0);
   const [windowWidth, setWindowWidth] = useState(0);
 
+  // Fetch tracks data from the API
+  useEffect(() => {
+    const fetchTracks = async () => {
+      try {
+        const now = new Date();
+        const data = await GetMeetings(now.getFullYear());
+        setTracks(data);
+        console.log("Fetched tracks:", data);
+        setSelectedTrack(data[data.length-1] ); // Set the first track as default
+      } catch (error) {
+        console.error("Error fetching tracks:", error);
+      }
+    };
+
+    fetchTracks();
+  }, []);
+
   // Update the globe's point of view when the selected track changes
   useEffect(() => {
     if (globeRef.current && selectedTrack) {
+      console.log(selectedTrack.circuit_key)
+      const s = trackCoords[selectedTrack.circuit_key || 0] || [0, 0];
       globeRef.current.pointOfView(
-        { lat: selectedTrack.coordinates[0], lng: selectedTrack.coordinates[1], altitude: 1 },
+        { lat: s[0], lng: s[1], altitude: 1 },
         1000
       );
     }
@@ -60,9 +68,11 @@ export default function Home() {
 
   return (
     <div className="relative w-full h-full">
-      {/* Select Dropdown */}
       <div className="flex items-right justify-end p-4 absolute right-0 top-0 z-10">
-        <Select onValueChange={(value) => setSelectedTrack(tracks[value])} defaultValue={0}>
+        <Select 
+          value={tracks.indexOf(selectedTrack)} 
+          onValueChange={(value) => setSelectedTrack(tracks[value])} 
+          disabled={tracks.length === 0}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Select a track" />
           </SelectTrigger>
@@ -71,7 +81,7 @@ export default function Home() {
               <SelectLabel>Track</SelectLabel>
               {tracks.map((x, key) => (
                 <SelectItem key={key} value={key}>
-                  {x.name}
+                  {x.meeting_name}
                 </SelectItem>
               ))}
             </SelectGroup>
@@ -88,6 +98,7 @@ export default function Home() {
           animateIn={true}
           width={windowWidth} // Dynamically set width
           height={windowHeight} // Dynamically set height
+          enablePointerInteraction={false}
         />
       </div>
     </div>
